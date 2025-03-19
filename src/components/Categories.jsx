@@ -83,7 +83,7 @@ const Categories = () => {
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8">
-      <div className="text-center text-2xl pb-4">
+      <div className="text-center text-3xl pb-4">
         <Title text1={"KATEGORI"} text2={"PRODUK"} />
       </div>
       {loading ? (
