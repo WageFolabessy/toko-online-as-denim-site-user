@@ -103,10 +103,10 @@ const Collection = () => {
     // Sorting products
     switch (sortType) {
       case "low-high":
-        filteredProducts.sort((a, b) => a.price - b.price);
+        filteredProducts.sort((a, b) => a.sale_price - b.sale_price);
         break;
       case "high-low":
-        filteredProducts.sort((a, b) => b.price - a.price);
+        filteredProducts.sort((a, b) => b.sale_price - a.sale_price);
         break;
       default:
         break;

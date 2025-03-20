@@ -10,7 +10,7 @@ const LatestCollection = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/user/get_products');
+        const response = await fetch('/api/user/get_latest_products');
         if (!response.ok) {
           throw new Error('Gagal memuat data produk');
         }

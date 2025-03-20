@@ -45,6 +45,8 @@ const Product = () => {
     return <p className="text-center mt-20">Produk tidak ditemukan.</p>;
   }
 
+  const salePrice = productData.sale_price ?? productData.original_price;
+
   const handleAddToCart = () => {
     addToCart(productData.id.toString());
   };
@@ -63,7 +65,9 @@ const Product = () => {
                   src={item}
                   alt={`Product ${index + 1}`}
                   className={`cursor-pointer rounded-lg border ${
-                    selectedImage === item ? "border-blue-500" : "border-transparent"
+                    selectedImage === item
+                      ? "border-blue-500"
+                      : "border-transparent"
                   } w-20 h-20 object-cover`}
                 />
               ))}
@@ -78,16 +82,18 @@ const Product = () => {
           </div>
           {/* Detail Produk */}
           <div className="flex-1">
-            <h1 className="text-3xl font-semibold mb-4">{productData.product_name}</h1>
+            <h1 className="text-3xl font-semibold mb-4">
+              {productData.product_name}
+            </h1>
             <div className="mb-6">
-              {productData.original_price === productData.sale_price ? (
+              {productData.original_price === salePrice ? (
                 <p className="text-3xl font-bold">
                   Rp {productData.original_price.toLocaleString("id-ID")}
                 </p>
               ) : (
                 <>
                   <p className="text-2xl font-bold text-black">
-                    Rp {productData.sale_price.toLocaleString("id-ID")}
+                    Rp {salePrice.toLocaleString("id-ID")}
                   </p>
                   <p className="text-lg text-red-500 line-through">
                     Rp {productData.original_price.toLocaleString("id-ID")}
@@ -95,7 +101,7 @@ const Product = () => {
                   <p className="mt-2 inline-block bg-red-100 text-red-600 px-3 py-1 rounded">
                     Diskon{" "}
                     {(
-                      ((productData.original_price - productData.sale_price) /
+                      ((productData.original_price - salePrice) /
                         productData.original_price) *
                       100
                     ).toFixed(2)}{" "}
@@ -127,7 +133,9 @@ const Product = () => {
             </h2>
           </div>
           <div className="border rounded-lg p-6 text-gray-700 leading-relaxed">
-            <div dangerouslySetInnerHTML={{ __html: productData.description }} />
+            <div
+              dangerouslySetInnerHTML={{ __html: productData.description }}
+            />
           </div>
         </div>
         {/* Review Produk */}

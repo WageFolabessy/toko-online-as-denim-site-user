@@ -105,14 +105,14 @@ const Categories = () => {
               }
             >
               <div className="cursor-pointer group flex flex-col items-center p-4 bg-gradient-to-r from-gray-200 to-white rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                <div className="w-40 h-40 mb-2 overflow-hidden">
+                <div className="h-60 w-full mb-2 overflow-hidden">
                   <img
                     src={`/storage/${category.image}`}
                     alt={category.category_name}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
-                <p className="text-lg font-semibold text-white text-center mt-2 group-hover:text-black transition-colors duration-300">
+                <p className="text-lg font-semibold text-gray-400 text-center mt-2 group-hover:text-black transition-colors duration-300">
                   {category.category_name}
                 </p>
               </div>
