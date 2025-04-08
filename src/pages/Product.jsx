@@ -46,7 +46,6 @@ const Product = () => {
   }
 
   const salePrice = productData.sale_price ?? productData.original_price;
-
   const handleAddToCart = () => {
     addToCart(productData.id.toString());
   };
@@ -54,34 +53,39 @@ const Product = () => {
   return (
     <div className="pt-36 pb-10 border-t-2">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex flex-col sm:flex-row gap-8">
-          {/* Gambar Produk */}
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto">
-              {images.map((item, index) => (
+        {/* Layout utama: gambar dan detail produk */}
+        <div className="flex flex-col lg:flex-row gap-10">
+          {/* Section Gambar Produk */}
+          <div className="lg:w-1/2">
+            <div className="flex flex-col gap-4">
+              {/* Gambar Utama */}
+              <div className="w-full">
                 <img
-                  key={index}
-                  onClick={() => setSelectedImage(item)}
-                  src={item}
-                  alt={`Product ${index + 1}`}
-                  className={`cursor-pointer rounded-lg border ${
-                    selectedImage === item
-                      ? "border-blue-500"
-                      : "border-transparent"
-                  } w-20 h-20 object-cover`}
+                  className="w-full h-auto object-cover rounded-lg shadow-lg"
+                  src={selectedImage}
+                  alt={productData.product_name}
                 />
-              ))}
-            </div>
-            <div className="flex-1">
-              <img
-                className="w-full rounded-lg shadow-lg object-cover"
-                src={selectedImage}
-                alt={productData.product_name}
-              />
+              </div>
+              {/* Thumbnail gambar */}
+              <div className="flex gap-3 justify-center overflow-x-auto">
+                {images.map((item, index) => (
+                  <img
+                    key={index}
+                    onClick={() => setSelectedImage(item)}
+                    src={item}
+                    alt={`Product ${index + 1}`}
+                    className={`cursor-pointer rounded-lg border ${
+                      selectedImage === item
+                        ? "border-blue-500"
+                        : "border-transparent"
+                    } w-20 h-20 object-cover transition-all duration-300 hover:scale-105`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-          {/* Detail Produk */}
-          <div className="flex-1">
+          {/* Section Detail Produk */}
+          <div className="lg:w-1/2 flex flex-col justify-start">
             <h1 className="text-3xl font-semibold mb-4">
               {productData.product_name}
             </h1>
@@ -125,6 +129,7 @@ const Product = () => {
             </button>
           </div>
         </div>
+
         {/* Deskripsi Produk */}
         <div className="mt-20">
           <div className="mb-4">
@@ -138,7 +143,8 @@ const Product = () => {
             />
           </div>
         </div>
-        {/* Review Produk */}
+
+        {/* Ulasan Produk */}
         <div className="mt-20">
           <ProductReview productId={productData.id} />
         </div>

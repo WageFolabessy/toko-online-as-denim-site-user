@@ -1,5 +1,5 @@
 import { useContext, useState, useRef, useEffect } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { assets } from "../assets/assets";
@@ -8,153 +8,172 @@ import { AppContext } from "../context/AppContext";
 const Navbar = () => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const { getCartCount, token, setToken, setCartItems, authFetch, handleLogout } =
-    useContext(AppContext);
-  const navigate = useNavigate();
-
+  const { getCartCount, token, handleLogout } = useContext(AppContext);
   const profileRef = useRef(null);
 
-  // Close dropdown jika klik di luar
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setShowProfileDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="flex items-center justify-between px-8 py-5 font-medium h-20 bg-white fixed top-0 left-0 w-full z-50 border border-gray-300 shadow-sm md:px-32">
-      {/* Logo */}
-      <div className="flex flex-col">
-        <Link to="/" className="logo flex-col">
-          <img src={assets.as_logo} className="w-36" alt="Logo" />
-        </Link>
-      </div>
-
-      {/* Navigation Links */}
-      <ul className="hidden sm:flex gap-5 text-sm text-gray-700">
-        {["/", "/collection", "/about", "/contact"].map((path, index) => (
-          <NavLink
-            to={path}
-            key={index}
-            className="flex flex-col items-center gap-1"
-          >
-            <p className="hover:text-black transition-all duration-300">
-              {["BERANDA", "KOLEKSI", "TENTANG KAMI", "KONTAK"][index]}
-            </p>
-            <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
-          </NavLink>
-        ))}
-      </ul>
-
-      {/* Icons Section */}
-      <div className="flex items-center gap-6">
-        {/* User Icon with Dropdown (berbasis click) */}
-        <div className="relative" ref={profileRef}>
-          {token ? (
-            <>
-              <FontAwesomeIcon
-                icon={faUser}
-                className="cursor-pointer text-xl"
-                onClick={() => setShowProfileDropdown((prev) => !prev)}
-              />
-              {showProfileDropdown && (
-                <div
-                  className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg transition-opacity duration-200"
-                  style={{ zIndex: 1000 }}
-                >
-                  <div className="py-2">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setShowProfileDropdown(false)}
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    >
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full text-left block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    >
-                      Keluar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="text-sm hover:text-black transition-all"
-            >
-              Masuk
+    <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link to="/">
+              <img src={assets.as_logo} alt="Logo" className="h-20 w-auto" />
             </Link>
-          )}
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-4">
+              {["BERANDA", "KOLEKSI", "TENTANG KAMI", "KONTAK"].map(
+                (label, index) => {
+                  const paths = ["/", "/collection", "/about", "/contact"];
+                  return (
+                    <NavLink
+                      key={index}
+                      to={paths[index]}
+                      className={({ isActive }) =>
+                        `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                          isActive
+                            ? "text-white bg-gray-900"
+                            : "text-gray-300 hover:text-white hover:bg-gray-700"
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  );
+                }
+              )}
+            </div>
+          </div>
+
+          {/* Profile & Cart */}
+          <div className="flex items-center gap-4">
+            <div className="relative" ref={profileRef}>
+              {token ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="cursor-pointer text-white text-xl"
+                    onClick={() => setShowProfileDropdown((prev) => !prev)}
+                  />
+                  {showProfileDropdown && (
+                    <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div
+                        className="py-1"
+                        role="menu"
+                        aria-orientation="vertical"
+                        aria-labelledby="options-menu"
+                      >
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setShowProfileDropdown(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                        >
+                          Dashboard
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                        >
+                          Keluar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-sm text-white hover:underline"
+                >
+                  Masuk
+                </Link>
+              )}
+            </div>
+            <Link to="/cart" className="relative">
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                className="text-white text-xl"
+              />
+              <span className="absolute -top-1 -right-1 bg-red-600 rounded-full h-5 w-5 flex items-center justify-center text-xs text-white">
+                {getCartCount()}
+              </span>
+            </Link>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setSidebarVisible(true)}
+                className="text-white focus:outline-none"
+              >
+                <img src={assets.menu_icon} className="w-6 bg-white text-white" alt="Menu Icon" />
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Cart Icon */}
-        <Link to="/cart" className="relative">
-          <FontAwesomeIcon
-            icon={faShoppingCart}
-            className="w-5 cursor-pointer"
-          />
-          <p className="absolute right-[-5px] bottom-[-5px] w-4 text-center bg-black text-white aspect-square rounded-full text-[8px]">
-            {getCartCount()}
-          </p>
-        </Link>
-
-        {/* Hamburger Menu Icon */}
-        <img
-          onClick={() => setSidebarVisible(true)}
-          src={assets.menu_icon}
-          className="w-5 cursor-pointer sm:hidden"
-          alt="menu icon"
-        />
       </div>
 
-      {/* Sidebar Menu for Small Screens */}
+      {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 right-0 bottom-0 w-full bg-white shadow-lg transition-all duration-300 ease-in-out transform ${
+        className={`fixed top-0 right-0 h-full w-full bg-gray-800 bg-opacity-95 transform transition-transform duration-300 ease-in-out ${
           sidebarVisible ? "translate-x-0" : "translate-x-full"
         }`}
-        style={{ zIndex: 999 }}
       >
-        <div className="flex flex-col text-gray-600">
-          {/* Back Button */}
+        <div className="p-4">
           <div
             onClick={() => setSidebarVisible(false)}
-            className="flex items-center gap-4 p-3 cursor-pointer"
+            className="mb-4 flex items-center cursor-pointer"
           >
             <img
-              className="h-4 rotate-180"
+              className="h-6 w-6 transform rotate-180"
               src={assets.dropdown_icon}
               alt="Back Icon"
             />
-            <p>Kembali</p>
+            <span className="ml-2 text-white">Kembali</span>
           </div>
-
-          {/* Sidebar Links */}
-          {["/", "/collection", "/about", "/contact"].map((path, index) => (
-            <NavLink
-              key={index}
-              onClick={() => setSidebarVisible(false)}
-              className="py-2 pl-6 border"
-              to={path}
-            >
-              {["BERANDA", "KOLEKSI", "TENTANG KAMI", "KONTAK"][index]}
-            </NavLink>
-          ))}
+          <div className="space-y-2">
+            {["BERANDA", "KOLEKSI", "TENTANG KAMI", "KONTAK"].map(
+              (label, index) => {
+                const paths = ["/", "/collection", "/about", "/contact"];
+                return (
+                  <NavLink
+                    key={index}
+                    onClick={() => setSidebarVisible(false)}
+                    to={paths[index]}
+                    className={({ isActive }) =>
+                      `block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                        isActive
+                          ? "text-white bg-gray-900"
+                          : "text-gray-300 hover:text-white hover:bg-gray-700"
+                      }`
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                );
+              }
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
 

@@ -10,7 +10,7 @@ function SampleNextArrow(props) {
   const { onClick } = props;
   return (
     <div
-      className="absolute top-1/2 right-0 transform -translate-y-1/2 text-black text-2xl cursor-pointer z-10"
+      className="absolute top-1/2 right-0 transform -translate-y-1/2 text-gray-800 text-3xl cursor-pointer z-10 hover:text-black"
       onClick={onClick}
     >
       <FaArrowCircleRight />
@@ -22,7 +22,7 @@ function SamplePrevArrow(props) {
   const { onClick } = props;
   return (
     <div
-      className="absolute top-1/2 left-0 transform -translate-y-1/2 text-black text-2xl cursor-pointer z-10"
+      className="absolute top-1/2 left-0 transform -translate-y-1/2 text-gray-800 text-3xl cursor-pointer z-10 hover:text-black"
       onClick={onClick}
     >
       <FaArrowCircleLeft />
@@ -50,41 +50,33 @@ const Categories = () => {
       });
   }, []);
 
-  // Tentukan jumlah slide yang ditampilkan
   const slidesToShow = categories.length < 3 ? categories.length : 3;
-  // Autoplay hanya aktif jika data lebih dari 3
   const autoplay = categories.length > 3;
 
   const sliderSettings = {
     dots: false,
-    infinite: categories.length > slidesToShow, // infinite jika ada lebih banyak data daripada slidesToShow
+    infinite: categories.length > slidesToShow,
     speed: 600,
-    slidesToShow: slidesToShow,
+    slidesToShow,
     slidesToScroll: 1,
-    autoplay: autoplay,
+    autoplay,
     autoplaySpeed: 4000,
     nextArrow: <SampleNextArrow />,
     prevArrow: <SamplePrevArrow />,
     responsive: [
-      {
-        breakpoint: 1024,
-        settings: { slidesToShow: slidesToShow },
-      },
+      { breakpoint: 1024, settings: { slidesToShow } },
       {
         breakpoint: 768,
         settings: { slidesToShow: Math.min(2, slidesToShow) },
       },
-      {
-        breakpoint: 480,
-        settings: { slidesToShow: 1 },
-      },
+      { breakpoint: 480, settings: { slidesToShow: 1 } },
     ],
   };
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8">
-      <div className="text-center text-3xl pb-4">
-        <Title text1={"KATEGORI"} text2={"PRODUK"} />
+    <section className="py-8 px-4 sm:px-6 lg:px-8">
+      <div className="text-center pb-6">
+        <Title text1="KATEGORI" text2="PRODUK" />
       </div>
       {loading ? (
         <p className="text-center text-gray-500">Memuat kategori...</p>
@@ -95,17 +87,16 @@ const Categories = () => {
       ) : (
         <Slider {...sliderSettings}>
           {categories.map((category) => (
-            <div
-              key={category.id}
-              className="px-2"
-              onClick={() =>
-                navigate("/collection", {
-                  state: { selectedCategory: category.category_name },
-                })
-              }
-            >
-              <div className="cursor-pointer group flex flex-col items-center p-4 bg-gradient-to-r from-gray-200 to-white rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                <div className="h-60 w-full mb-2 overflow-hidden">
+            <div key={category.id} className="px-2">
+              <div
+                className="cursor-pointer group flex flex-col items-center p-4 bg-gradient-to-r from-gray-200 to-white rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                onClick={() =>
+                  navigate("/collection", {
+                    state: { selectedCategory: category.category_name },
+                  })
+                }
+              >
+                <div className="h-60 w-full mb-2 overflow-hidden rounded-lg">
                   <img
                     src={`/storage/${category.image}`}
                     alt={category.category_name}
@@ -120,7 +111,7 @@ const Categories = () => {
           ))}
         </Slider>
       )}
-    </div>
+    </section>
   );
 };
 

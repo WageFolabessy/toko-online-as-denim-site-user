@@ -47,8 +47,14 @@ const ForgotPassword = () => {
         onSubmit={handleSubmit}
         className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800"
       >
-        <h2 className="text-3xl font-bold">Lupa Password</h2>
-        <p>Masukkan email anda yang terdaftar untuk menerima link reset password.</p>
+        <div className="inline-flex items-center gap-2 mb-2 mt-10">
+          <p className="prata-reguler text-3xl">LUPA PASSWORD</p>
+          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+        </div>
+
+        <p className="text-center text-sm text-gray-700 mb-2">
+          Masukkan email Anda yang terdaftar untuk menerima link reset password.
+        </p>
 
         <div className="w-full">
           <input
@@ -63,8 +69,8 @@ const ForgotPassword = () => {
             }}
             required
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          {message && <p className="text-green-500 text-sm">{message}</p>}
+          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          {message && <p className="text-green-500 text-sm mt-1">{message}</p>}
         </div>
 
         <button

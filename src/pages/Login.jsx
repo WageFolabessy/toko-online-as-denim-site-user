@@ -1,18 +1,12 @@
 import { useState, useContext, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const AuthForm = () => {
-  useEffect(() => {
-    let judul = isLogin ? "Masuk" : "Register";
-    document.title = `AS Denim - ${judul}`;
-  });
   const { setToken } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // Initial form data structure
   const getInitialFormData = () => ({
     name: "",
     email: "",
@@ -20,34 +14,24 @@ const AuthForm = () => {
     password_confirmation: "",
   });
 
-  // State Management
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState(getInitialFormData());
   const [errors, setErrors] = useState({});
 
-  // Handle form input changes
+  useEffect(() => {
+    document.title = `AS Denim - ${isLogin ? "Masuk" : "Register"}`;
+  }, [isLogin]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      [name]: null,
-      global: null,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: null, global: null }));
   };
 
-  // Client-side form validation function
   const validateFormData = (data) => {
     const errors = {};
-
     if (!data.email) errors.email = ["Email wajib diisi."];
     if (!data.password) errors.password = ["Password wajib diisi."];
-
     if (!isLogin) {
       if (!data.name) errors.name = ["Nama wajib diisi."];
       if (!data.password_confirmation)
@@ -55,14 +39,11 @@ const AuthForm = () => {
       if (data.password !== data.password_confirmation)
         errors.password_confirmation = ["Konfirmasi password tidak cocok."];
     }
-
     return errors;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Client-side validation
     const validationErrors = validateFormData(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -74,9 +55,7 @@ const AuthForm = () => {
     try {
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
@@ -95,25 +74,19 @@ const AuthForm = () => {
       } else if (response.status === 422) {
         setErrors(data.errors || {});
       } else {
-        throw new Error(
-          data.message || "Terjadi kesalahan, silakan coba lagi."
-        );
+        throw new Error(data.message || "Terjadi kesalahan.");
       }
     } catch (error) {
-      console.error("Error during authentication:", error);
-      toast.error(
-        error.message || "Terjadi kesalahan jaringan, silakan coba lagi."
-      );
+      console.error("Auth error:", error);
+      toast.error(error.message || "Terjadi kesalahan jaringan.");
     }
   };
 
-  // Reset the form to initial state
   const resetForm = () => {
     setFormData(getInitialFormData());
     setErrors({});
   };
 
-  // Toggle between login and register forms
   const toggleForm = () => {
     resetForm();
     setIsLogin(!isLogin);
@@ -123,38 +96,43 @@ const AuthForm = () => {
     <div className="pt-24">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800"
+        className="flex flex-col items-center w-[90%] sm:max-w-md m-auto mt-14 gap-4 text-gray-800 bg-white p-6 rounded-lg shadow-md"
       >
-        <div className="inline-flex items-center gap-2 mb-2 mt-10">
+        <div className="flex items-center gap-2 mb-4">
           <p className="prata-reguler text-3xl">
             {isLogin ? "MASUK" : "DAFTAR"}
           </p>
-          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+          <hr className="border-none h-[2px] w-8 bg-gray-800" />
         </div>
 
         {errors.global && (
-          <div className="text-red-500">
+          <div className="text-red-500 text-sm text-center">
             <p>{errors.global}</p>
           </div>
         )}
 
         {renderFormFields()}
 
-        <button className="bg-black text-white font-light px-8 py-2 mt-4">
+        <button className="bg-black hover:bg-gray-900 text-white font-light px-8 py-2 mt-4 rounded-md transition-all duration-300">
           {isLogin ? "MASUK" : "DAFTAR"}
         </button>
 
-        <p className="mt-4 text-sm">
+        <p className="mt-4 text-sm text-center">
           {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
-          <span className="text-blue-500 cursor-pointer" onClick={toggleForm}>
+          <span
+            className="text-blue-600 hover:underline cursor-pointer"
+            onClick={toggleForm}
+          >
             {isLogin ? "Daftar" : "Masuk"}
           </span>
         </p>
 
-        {/* Tambahan link Lupa Password untuk mode login */}
         {isLogin && (
-          <p className="mt-2 text-sm">
-            <Link to="/forgot-password" className="text-blue-500">
+          <p className="mt-2 text-sm text-center">
+            <Link
+              to="/forgot-password"
+              className="text-blue-500 hover:underline"
+            >
               Lupa Password?
             </Link>
           </p>
@@ -163,22 +141,16 @@ const AuthForm = () => {
     </div>
   );
 
-  // Render form fields with validation
   function renderFormFields() {
     const fields = [];
 
     if (!isLogin) {
-      fields.push({
-        label: "Nama Lengkap",
-        name: "name",
-        type: "text",
-        required: true,
-      });
+      fields.push({ label: "Nama Lengkap", name: "name", type: "text" });
     }
 
     fields.push(
-      { label: "Email", name: "email", type: "email", required: true },
-      { label: "Password", name: "password", type: "password", required: true }
+      { label: "Email", name: "email", type: "email" },
+      { label: "Password", name: "password", type: "password" }
     );
 
     if (!isLogin) {
@@ -186,7 +158,6 @@ const AuthForm = () => {
         label: "Konfirmasi Password",
         name: "password_confirmation",
         type: "password",
-        required: true,
       });
     }
 
@@ -196,15 +167,19 @@ const AuthForm = () => {
           <div key={field.name} className="w-full">
             <input
               name={field.name}
-              onChange={handleChange}
-              value={formData[field.name]}
               type={field.type}
-              className="w-full px-3 py-2 border border-gray-800"
+              value={formData[field.name]}
+              onChange={handleChange}
               placeholder={field.label}
-              required={field.required}
+              className={`w-full px-4 py-2 border ${
+                errors[field.name] ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-black`}
+              required
             />
             {errors[field.name] && (
-              <p className="text-red-500 text-sm">{errors[field.name][0]}</p>
+              <p className="text-red-500 text-xs mt-1">
+                {errors[field.name][0]}
+              </p>
             )}
           </div>
         ))}

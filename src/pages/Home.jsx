@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import Categories from "../components/Categories";
-import LatestColletion from "../components/LatestColletion";
+import LatestCollection from "../components/LatestCollection";
 
 const Home = () => {
   useEffect(() => {
     document.title = "AS Denim";
   }, []);
+
   return (
-    <div className="pt-36">
+    <div className="pt-36 bg-gray-50">
       <Categories />
-      <LatestColletion />
+      <LatestCollection />
     </div>
   );
 };

@@ -32,46 +32,49 @@ const Orders = () => {
   }, [authFetch]);
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-6">Pesanan Saya</h2>
+    <div className="p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Pesanan Saya</h2>
+
       {orders.length === 0 ? (
-        <p>Anda belum memiliki pesanan.</p>
+        <p className="text-gray-600">Anda belum memiliki pesanan.</p>
       ) : (
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr>
-              <th className="border-b p-2">No. Order</th>
-              <th className="border-b p-2">Tanggal</th>
-              <th className="border-b p-2">Status</th>
-              <th className="border-b p-2">Total</th>
-              <th className="border-b p-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td className="border-b p-2">{order.order_number}</td>
-                <td className="border-b p-2">
-                  {format(new Date(order.created_at), "dd MMM yyyy HH:mm", {
-                    locale: id,
-                  })}
-                </td>
-                <td className="border-b p-2 capitalize">{order.status}</td>
-                <td className="border-b p-2">
-                  Rp {Number(order.total_amount).toLocaleString("id-ID")}
-                </td>
-                <td className="border-b p-2">
-                  <button
-                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
-                    className="text-blue-500 hover:underline"
-                  >
-                    Lihat
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm md:text-base text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr className="bg-gray-100 text-gray-700">
+                <th className="border-b p-3 font-semibold">No. Order</th>
+                <th className="border-b p-3 font-semibold">Tanggal</th>
+                <th className="border-b p-3 font-semibold">Status</th>
+                <th className="border-b p-3 font-semibold">Total</th>
+                <th className="border-b p-3 font-semibold">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="border-b p-3">{order.order_number}</td>
+                  <td className="border-b p-3">
+                    {format(new Date(order.created_at), "dd MMM yyyy HH:mm", {
+                      locale: id,
+                    })}
+                  </td>
+                  <td className="border-b p-3 capitalize">{order.status}</td>
+                  <td className="border-b p-3">
+                    Rp {Number(order.total_amount).toLocaleString("id-ID")}
+                  </td>
+                  <td className="border-b p-3">
+                    <button
+                      onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Lihat
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -11,7 +11,6 @@ const ResetPassword = () => {
 
   useEffect(() => {
     document.title = "AS Denim - Reset Password";
-    // Jika token atau email tidak ada, redirect ke halaman login
     if (!token || !email) {
       toast.error("Link reset password tidak valid.");
       navigate("/login");
@@ -33,7 +32,6 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi sederhana: pastikan password dan konfirmasi cocok
     if (formData.password !== formData.password_confirmation) {
       setErrors({ password_confirmation: "Konfirmasi password tidak cocok." });
       return;
@@ -73,7 +71,14 @@ const ResetPassword = () => {
         onSubmit={handleSubmit}
         className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800"
       >
-        <h2 className="text-3xl font-bold">Reset Password</h2>
+        <div className="inline-flex items-center gap-2 mb-2 mt-10">
+          <p className="prata-reguler text-3xl">RESET PASSWORD</p>
+          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+        </div>
+
+        <p className="text-sm text-center text-gray-700 mb-2">
+          Masukkan password baru Anda dan konfirmasi.
+        </p>
 
         <div className="w-full">
           <input
@@ -86,7 +91,7 @@ const ResetPassword = () => {
             required
           />
           {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password}</p>
+            <p className="text-red-500 text-sm mt-1">{errors.password}</p>
           )}
         </div>
 
@@ -101,7 +106,7 @@ const ResetPassword = () => {
             required
           />
           {errors.password_confirmation && (
-            <p className="text-red-500 text-sm">
+            <p className="text-red-500 text-sm mt-1">
               {errors.password_confirmation}
             </p>
           )}

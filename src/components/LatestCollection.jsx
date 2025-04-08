@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import Title from './Title';
-import ProductItem from './ProductItem';
+import { useState, useEffect } from "react";
+import Title from "./Title";
+import ProductItem from "./ProductItem";
 
 const LatestCollection = () => {
   const [latestProducts, setLatestProducts] = useState([]);
@@ -10,15 +10,19 @@ const LatestCollection = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/user/get_latest_products');
+        const response = await fetch("/api/user/get_latest_products");
         if (!response.ok) {
-          throw new Error('Gagal memuat data produk');
+          throw new Error("Gagal memuat data produk");
         }
         const data = await response.json();
         const productsWithImages = data
-          .filter((product) => product.images.some((img) => img.is_primary === 1))
+          .filter((product) =>
+            product.images.some((img) => img.is_primary === 1)
+          )
           .map((product) => {
-            const primaryImage = product.images.find((img) => img.is_primary === 1);
+            const primaryImage = product.images.find(
+              (img) => img.is_primary === 1
+            );
             return {
               id: product.id,
               name: product.product_name,
@@ -36,6 +40,7 @@ const LatestCollection = () => {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -56,16 +61,15 @@ const LatestCollection = () => {
   }
 
   return (
-    <div className="my-10">
-      {/* Judul Koleksi Terbaru */}
-      <div className="text-center py-8 text-3xl">
-        <Title text1={'PRODUK'} text2={'TERBARU'} />
-        <p className="w-3/4 m-auto text-xs sm:text-sm md:text-base text-gray-600">
-          Temukan koleksi produk terbaru kami yang dirancang dengan gaya dan kualitas terbaik.
+    <section className="my-10">
+      <div className="text-center py-8">
+        <Title text1="PRODUK" text2="TERBARU" />
+        <p className="w-11/12 sm:w-3/4 md:w-2/3 mx-auto text-xs sm:text-sm md:text-base text-gray-600 mt-4">
+          Temukan koleksi produk terbaru kami yang dirancang dengan gaya dan
+          kualitas terbaik.
         </p>
       </div>
-      {/* Daftar Produk Terbaru */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6 px-4 sm:px-6 lg:px-8">
         {latestProducts.map((item) => (
           <div
             key={item.id}
@@ -83,7 +87,7 @@ const LatestCollection = () => {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 
