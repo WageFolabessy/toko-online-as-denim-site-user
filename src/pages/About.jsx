@@ -8,7 +8,7 @@ const About = () => {
   }, []);
 
   return (
-    <div className="pt-36 px-4 lg:px-20 bg-white text-gray-700">
+    <div className="pt-36 px-4 lg:px-20 text-gray-700">
       <div className="text-center mb-12">
         <Title text1={"TENTANG"} text2={"KAMI"} />
         <p className="mt-4 text-base md:text-lg text-gray-500 max-w-3xl mx-auto">

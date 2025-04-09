@@ -8,7 +8,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="pt-36 bg-gray-50">
+    <div className="pt-36">
       <Categories />
       <LatestCollection />
     </div>
