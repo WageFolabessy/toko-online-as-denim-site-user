@@ -5,7 +5,9 @@ import { useNavigate } from "react-router-dom";
 export const AppContext = createContext();
 
 const AppProvider = ({ children }) => {
-  const [token, setToken] = useState(() => sessionStorage.getItem("token") || null);
+  const [token, setToken] = useState(
+    () => sessionStorage.getItem("token") || null
+  );
   const [cartItems, setCartItems] = useState([]);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -28,21 +30,26 @@ const AppProvider = ({ children }) => {
   };
 
   // Fungsi logout yang hanya akan dipicu satu kali
-  const handleLogout = useCallback(async (logoutMessage) => {
-    if (isLoggedOutRef.current) return; // Jika sudah logout, jangan jalankan lagi
-    isLoggedOutRef.current = true;
-    try {
-      // Jika perlu, panggil API logout di sini
-    } catch (error) {
-      console.error("Error saat logout:", error);
-    } finally {
-      updateToken(null);
-      setCartItems([]);
-      navigate("/login");
-      // Tampilkan satu toast informasi logout
-      toast.info(logoutMessage || "Sesi Anda telah berakhir. Silakan login kembali.");
-    }
-  }, [navigate]);
+  const handleLogout = useCallback(
+    async (logoutMessage) => {
+      if (isLoggedOutRef.current) return; // Jika sudah logout, jangan jalankan lagi
+      isLoggedOutRef.current = true;
+      try {
+        // Jika perlu, panggil API logout di sini
+      } catch (error) {
+        console.error("Error saat logout:", error);
+      } finally {
+        updateToken(null);
+        setCartItems([]);
+        navigate("/login");
+        // Tampilkan satu toast informasi logout
+        toast.info(
+          logoutMessage || "Sesi Anda telah berakhir. Silakan login kembali."
+        );
+      }
+    },
+    [navigate]
+  );
 
   const authFetch = useCallback(
     async (url, options = {}) => {
@@ -108,7 +115,13 @@ const AppProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       fetchCartItems();
-      const activityEvents = ["click", "mousemove", "keydown", "scroll", "touchstart"];
+      const activityEvents = [
+        "click",
+        "mousemove",
+        "keydown",
+        "scroll",
+        "touchstart",
+      ];
       activityEvents.forEach((eventName) => {
         window.addEventListener(eventName, resetInactivityTimer);
       });
@@ -127,76 +140,105 @@ const AppProvider = ({ children }) => {
   }, [token, fetchCartItems, resetInactivityTimer]);
 
   // Fungsi-fungsi tambahan (addToCart, updateQuantity, removeFromCart, dll)
-  const addToCart = useCallback(async (itemId, size, quantity = 1) => {
-    try {
-      const response = await authFetch("/api/user/shopping_cart", {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: itemId,
-          qty: quantity,
-          size: size,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success("Produk berhasil ditambahkan ke keranjang");
-        fetchCartItems();
-      } else {
-        toast.error(data.message || "Gagal menambahkan produk ke keranjang");
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      toast.error("Terjadi kesalahan saat menambahkan produk ke keranjang");
-    }
-  }, [authFetch, fetchCartItems]);
+  const addToCart = useCallback(
+    async (itemId, quantity = 1, availableStock) => {
+      // Cari apakah produk sudah ada di dalam keranjang
+      const existingCartItem = cartItems.find(
+        (item) => item.product_id === itemId
+      );
 
-  const updateQuantity = useCallback(async (cartItemId, qty) => {
-    try {
-      const response = await authFetch(`/api/user/shopping_cart/${cartItemId}`, {
-        method: "PUT",
-        body: JSON.stringify({ qty }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success("Jumlah produk berhasil diperbarui");
-        fetchCartItems();
-      } else {
-        toast.error(data.message || "Gagal mengupdate jumlah produk");
-      }
-    } catch (error) {
-      console.error("Error updating quantity:", error);
-      toast.error("Terjadi kesalahan saat mengupdate jumlah produk");
-    }
-  }, [authFetch, fetchCartItems]);
+      const currentCartQty = existingCartItem ? existingCartItem.qty : 0;
+      const newTotalQty = currentCartQty + quantity;
 
-  const removeFromCart = useCallback(async (cartItemId) => {
-    try {
-      const response = await authFetch(`/api/user/shopping_cart/${cartItemId}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success("Produk berhasil dihapus dari keranjang");
-        fetchCartItems();
-      } else {
-        toast.error(data.message || "Gagal menghapus produk dari keranjang");
+      if (newTotalQty > availableStock) {
+        toast.error("Stok produk tidak mencukupi untuk jumlah yang diminta.");
+        return;
       }
-    } catch (error) {
-      console.error("Error removing from cart:", error);
-      toast.error("Terjadi kesalahan saat menghapus produk dari keranjang");
-    }
-  }, [authFetch, fetchCartItems]);
+
+      try {
+        const response = await authFetch("/api/user/shopping_cart", {
+          method: "POST",
+          body: JSON.stringify({
+            product_id: itemId,
+            qty: quantity,
+          }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+          toast.success("Produk berhasil ditambahkan ke keranjang");
+          fetchCartItems();
+        } else {
+          toast.error(data.message || "Gagal menambahkan produk ke keranjang");
+        }
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        toast.error("Terjadi kesalahan saat menambahkan produk ke keranjang");
+      }
+    },
+    [authFetch, fetchCartItems, cartItems]
+  );
+
+  const updateQuantity = useCallback(
+    async (cartItemId, qty) => {
+      try {
+        const response = await authFetch(
+          `/api/user/shopping_cart/${cartItemId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ qty }),
+          }
+        );
+        const data = await response.json();
+        if (response.ok) {
+          toast.success("Jumlah produk berhasil diperbarui");
+          fetchCartItems();
+        } else {
+          toast.error(data.message || "Gagal mengupdate jumlah produk");
+        }
+      } catch (error) {
+        console.error("Error updating quantity:", error);
+        toast.error("Terjadi kesalahan saat mengupdate jumlah produk");
+      }
+    },
+    [authFetch, fetchCartItems]
+  );
+
+  const removeFromCart = useCallback(
+    async (cartItemId) => {
+      try {
+        const response = await authFetch(
+          `/api/user/shopping_cart/${cartItemId}`,
+          {
+            method: "DELETE",
+          }
+        );
+        const data = await response.json();
+        if (response.ok) {
+          toast.success("Produk berhasil dihapus dari keranjang");
+          fetchCartItems();
+        } else {
+          toast.error(data.message || "Gagal menghapus produk dari keranjang");
+        }
+      } catch (error) {
+        console.error("Error removing from cart:", error);
+        toast.error("Terjadi kesalahan saat menghapus produk dari keranjang");
+      }
+    },
+    [authFetch, fetchCartItems]
+  );
 
   const clearCart = useCallback(() => {
     setCartItems([]);
   }, []);
 
-  const getCartCount = () => cartItems.reduce((total, item) => total + item.qty, 0);
+  const getCartCount = () =>
+    cartItems.reduce((total, item) => total + item.qty, 0);
 
   const getCartAmount = () =>
     cartItems.reduce((total, cartItem) => {
-      const price = cartItem.productData?.original_price || cartItem.productData.sale_price;
-      return total + price * cartItem.qty;
+      const { original_price, sale_price } = cartItem.productData || {};
+      const effectivePrice = sale_price > 0 ? sale_price : original_price;
+      return total + effectivePrice * cartItem.qty;
     }, 0);
 
   const value = {

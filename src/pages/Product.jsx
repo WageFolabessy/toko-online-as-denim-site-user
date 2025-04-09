@@ -47,7 +47,7 @@ const Product = () => {
 
   const salePrice = productData.sale_price ?? productData.original_price;
   const handleAddToCart = () => {
-    addToCart(productData.id.toString());
+    addToCart(productData.id, 1, productData.stock);
   };
 
   return (
