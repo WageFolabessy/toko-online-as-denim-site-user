@@ -300,8 +300,7 @@ const PlaceOrder = () => {
                           <p className="text-sm text-gray-600">
                             Harga: Rp{" "}
                             {(
-                              cartItem.productData.sale_price ||
-                              cartItem.productData.original_price
+                              cartItem.productData?.sale_price || cartItem.productData.original_price
                             ).toLocaleString("id-ID")}
                           </p>
                         </div>

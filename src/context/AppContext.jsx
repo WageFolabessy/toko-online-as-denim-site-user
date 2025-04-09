@@ -195,7 +195,7 @@ const AppProvider = ({ children }) => {
 
   const getCartAmount = () =>
     cartItems.reduce((total, cartItem) => {
-      const price = cartItem.productData?.sale_price || 0;
+      const price = cartItem.productData?.original_price || cartItem.productData.sale_price;
       return total + price * cartItem.qty;
     }, 0);
 

@@ -66,7 +66,10 @@ const Cart = () => {
                   <div className="flex items-center gap-4 mt-1">
                     <p className="text-sm text-gray-700">
                       {currency}
-                      {Number(productData.sale_price).toLocaleString("id-ID")}
+                      {(productData.sale_price > 0
+                        ? Number(productData.sale_price)
+                        : Number(productData.original_price)
+                      ).toLocaleString("id-ID")}
                     </p>
                     {item.size && (
                       <p className="px-3 py-1 border border-gray-300 rounded text-xs text-gray-600">
