@@ -157,6 +157,7 @@ const AppProvider = ({ children }) => {
                     slug: item.product.slug,
                     stock: item.product.stock,
                     size: item.product.size,
+                    weight: item.product.weight,
                     original_price: item.product.original_price,
                     sale_price: item.product.sale_price,
                     effective_price: item.product.effective_price,
