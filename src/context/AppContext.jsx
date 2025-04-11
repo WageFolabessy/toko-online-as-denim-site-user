@@ -1,64 +1,106 @@
-import { createContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const AppContext = createContext();
 
 const AppProvider = ({ children }) => {
+  // State
   const [token, setToken] = useState(
     () => sessionStorage.getItem("token") || null
   );
   const [cartItems, setCartItems] = useState([]);
+  const [cartLoading, setCartLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const currency = "Rp. ";
-  const delivery_fee = 0;
-  const navigate = useNavigate();
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 menit
 
-  // Gunakan useRef untuk menyimpan timer dan flag logout
+  const currency = "Rp ";
+  const delivery_fee = 0;
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+
+  const navigate = useNavigate();
+  const location = useLocation();
   const inactivityTimerRef = useRef(null);
   const isLoggedOutRef = useRef(false);
 
-  const updateToken = (newToken) => {
-    setToken(newToken);
-    if (newToken) {
-      sessionStorage.setItem("token", newToken);
-    } else {
-      sessionStorage.removeItem("token");
-    }
-  };
-
-  // Fungsi logout yang hanya akan dipicu satu kali
-  const handleLogout = useCallback(
-    async (logoutMessage) => {
-      if (isLoggedOutRef.current) return; // Jika sudah logout, jangan jalankan lagi
-      isLoggedOutRef.current = true;
-      try {
-        // Jika perlu, panggil API logout di sini
-      } catch (error) {
-        console.error("Error saat logout:", error);
-      } finally {
-        updateToken(null);
+  const updateToken = useCallback(
+    (newToken) => {
+      console.log(
+        "[AppContext] Updating token:",
+        newToken ? "Token Set" : "Token Removed"
+      );
+      const previousToken = token;
+      isLoggedOutRef.current = false;
+      setToken(newToken);
+      if (newToken) {
+        sessionStorage.setItem("token", newToken);
+        if (!previousToken) {
+          setCartLoading(true);
+        }
+      } else {
+        sessionStorage.removeItem("token");
         setCartItems([]);
-        navigate("/login");
-        // Tampilkan satu toast informasi logout
-        toast.info(
-          logoutMessage || "Sesi Anda telah berakhir. Silakan login kembali."
-        );
+        setCartLoading(false);
       }
     },
-    [navigate]
+    [token]
+  );
+
+  const handleLogout = useCallback(
+    async (logoutMessage) => {
+      if (isLoggedOutRef.current) return;
+      console.log("[AppContext] Handling logout...");
+      isLoggedOutRef.current = true;
+      const currentToken = token || sessionStorage.getItem("token");
+
+      try {
+        if (currentToken) {
+          await fetch("/api/user/logout", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${currentToken}`,
+              Accept: "application/json",
+            },
+          });
+          console.log("[AppContext] Backend logout API called.");
+        }
+      } catch (error) {
+        console.error("[AppContext] Error calling backend logout API:", error);
+      } finally {
+        updateToken(null);
+        if (location.pathname !== "/login") {
+          navigate("/login");
+        }
+        toast.info(logoutMessage || "Sesi Anda telah berakhir.");
+      }
+    },
+    [navigate, token, updateToken, location.pathname]
   );
 
   const authFetch = useCallback(
     async (url, options = {}) => {
+      const currentToken = sessionStorage.getItem("token");
+
+      if (!currentToken) {
+        console.log("[AppContext] No token found in authFetch.");
+        if (!isLoggedOutRef.current) {
+          handleLogout("Sesi tidak ditemukan. Silakan login kembali.");
+        }
+        throw new Error("User not authenticated");
+      }
+
       const defaultHeaders = {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${currentToken}`,
       };
-
       const mergedOptions = {
         ...options,
         headers: { ...defaultHeaders, ...options.headers },
@@ -67,54 +109,130 @@ const AppProvider = ({ children }) => {
       try {
         const response = await fetch(url, mergedOptions);
         if (response.status === 401) {
-          // Hanya panggil handleLogout tanpa toast tambahan
-          handleLogout("Sesi Anda telah berakhir. Silakan login kembali.");
+          console.log("[AppContext] Received 401 in authFetch.");
+          if (!isLoggedOutRef.current) {
+            handleLogout("Sesi Anda tidak valid atau telah berakhir.");
+          }
+          throw new Error("Unauthorized");
         }
+        if (response.status === 403) {
+          console.log("[AppContext] Received 403 Forbidden.");
+          toast.error("Anda tidak memiliki izin untuk melakukan aksi ini.");
+          throw new Error("Forbidden");
+        }
+
         return response;
       } catch (error) {
-        console.error("Network error:", error);
-        toast.error("Terjadi kesalahan jaringan. Silakan coba lagi.");
+        console.error("[AppContext] Error in authFetch:", error.message);
+        if (
+          error.message !== "Unauthorized" &&
+          error.message !== "Forbidden" &&
+          error.message !== "User not authenticated"
+        ) {
+          toast.error("Terjadi masalah koneksi jaringan.");
+        }
         throw error;
       }
     },
-    [token, handleLogout]
+    [handleLogout]
   );
 
   const fetchCartItems = useCallback(async () => {
+    const currentToken = sessionStorage.getItem("token");
+    if (!currentToken) {
+      setCartItems([]);
+      setCartLoading(false);
+      return;
+    }
+
+    console.log("[AppContext] Fetching cart items...");
+    setCartLoading(true);
     try {
       const response = await authFetch("/api/user/shopping_cart");
       const data = await response.json();
+
       if (response.ok) {
-        const transformedCartItems = data.map((item) => ({
-          id: item.id,
-          product_id: item.product_id,
-          qty: item.qty,
-          size: item.size,
-          productData: item.product,
-        }));
-        setCartItems(transformedCartItems);
+        if (data && Array.isArray(data.data)) {
+          const transformedCartItems = data.data
+            .map((item) => ({
+              id: item.id,
+              qty: item.qty,
+              productData: item.product
+                ? {
+                    id: item.product.id,
+                    name: item.product.name,
+                    slug: item.product.slug,
+                    stock: item.product.stock,
+                    size: item.product.size,
+                    original_price: item.product.original_price,
+                    sale_price: item.product.sale_price,
+                    effective_price: item.product.effective_price,
+                    primary_image:
+                      item.product.primary_image || "/placeholder.jpg",
+                  }
+                : null,
+            }))
+            .filter((item) => item.productData !== null);
+          setCartItems(transformedCartItems);
+          console.log("[AppContext] Cart items fetched:", transformedCartItems);
+        } else {
+          console.warn("[AppContext] Cart data format mismatch:", data);
+          setCartItems([]);
+        }
       } else {
-        toast.error(data.message || "Gagal mengambil data keranjang");
+        console.error("[AppContext] Failed to fetch cart items:", data);
+        toast.error(data?.message || "Gagal mengambil data keranjang");
+        setCartItems([]);
       }
     } catch (error) {
-      console.error("Error fetching cart items:", error);
-      toast.error("Terjadi kesalahan saat mengambil data keranjang");
+      console.error(
+        "[AppContext] Error fetching cart items (catch block):",
+        error.message
+      );
+      if (
+        error.message !== "Unauthorized" &&
+        error.message !== "Forbidden" &&
+        error.message !== "User not authenticated"
+      ) {
+        setCartItems([]);
+      }
+    } finally {
+      setCartLoading(false);
     }
   }, [authFetch]);
 
-  // Reset timer inaktivitas dan simpan di ref
+  useEffect(() => {
+    const currentToken = sessionStorage.getItem("token") || token;
+    if (currentToken) {
+      console.log("[AppContext] Token exists, fetching initial cart.");
+      fetchCartItems();
+    } else {
+      console.log(
+        "[AppContext] No token, ensuring cart is empty and not loading."
+      );
+      setCartItems([]);
+      setCartLoading(false);
+    }
+  }, [token, fetchCartItems]); 
+
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
-    inactivityTimerRef.current = setTimeout(() => {
-      handleLogout("Sesi Anda telah berakhir karena tidak ada aktivitas.");
-    }, INACTIVITY_TIMEOUT);
+    const currentToken = sessionStorage.getItem("token");
+    if (currentToken) {
+      inactivityTimerRef.current = setTimeout(() => {
+        console.log("[AppContext] Inactivity timeout.");
+        if (!isLoggedOutRef.current) {
+          handleLogout("Sesi Anda telah berakhir karena tidak ada aktivitas.");
+        }
+      }, INACTIVITY_TIMEOUT);
+    }
   }, [handleLogout, INACTIVITY_TIMEOUT]);
 
   useEffect(() => {
-    if (token) {
-      fetchCartItems();
+    const currentToken = sessionStorage.getItem("token");
+    if (currentToken) {
       const activityEvents = [
         "click",
         "mousemove",
@@ -123,9 +241,12 @@ const AppProvider = ({ children }) => {
         "touchstart",
       ];
       activityEvents.forEach((eventName) => {
-        window.addEventListener(eventName, resetInactivityTimer);
+        window.addEventListener(eventName, resetInactivityTimer, {
+          passive: true,
+        });
       });
-      resetInactivityTimer();
+      resetInactivityTimer(); // Mulai timer
+
       return () => {
         activityEvents.forEach((eventName) => {
           window.removeEventListener(eventName, resetInactivityTimer);
@@ -135,51 +256,87 @@ const AppProvider = ({ children }) => {
         }
       };
     } else {
-      setCartItems([]);
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
     }
-  }, [token, fetchCartItems, resetInactivityTimer]);
+  }, [token, resetInactivityTimer]);
 
-  // Fungsi-fungsi tambahan (addToCart, updateQuantity, removeFromCart, dll)
   const addToCart = useCallback(
     async (itemId, quantity = 1, availableStock) => {
-      // Cari apakah produk sudah ada di dalam keranjang
-      const existingCartItem = cartItems.find(
-        (item) => item.product_id === itemId
+      console.log(
+        `[AppContext] Adding to cart: Item ${itemId}, Qty: ${quantity}, Stock: ${availableStock}`
       );
-
+      const existingCartItem = cartItems.find(
+        (item) => item.productData?.id === itemId
+      );
       const currentCartQty = existingCartItem ? existingCartItem.qty : 0;
       const newTotalQty = currentCartQty + quantity;
 
       if (newTotalQty > availableStock) {
-        toast.error("Stok produk tidak mencukupi untuk jumlah yang diminta.");
+        toast.warn("Stok produk tidak mencukupi.");
         return;
       }
-
       try {
         const response = await authFetch("/api/user/shopping_cart", {
           method: "POST",
-          body: JSON.stringify({
-            product_id: itemId,
-            qty: quantity,
-          }),
+          body: JSON.stringify({ product_id: itemId, qty: quantity }),
         });
         const data = await response.json();
-        if (response.ok) {
-          toast.success("Produk berhasil ditambahkan ke keranjang");
-          fetchCartItems();
+        if (response.ok || response.status === 201) {
+          toast.success(data.message || "Produk ditambahkan");
+          fetchCartItems(); // Refresh cart
         } else {
-          toast.error(data.message || "Gagal menambahkan produk ke keranjang");
+          toast.error(data?.message || "Gagal menambahkan produk");
         }
       } catch (error) {
-        console.error("Error adding to cart:", error);
-        toast.error("Terjadi kesalahan saat menambahkan produk ke keranjang");
+        console.error("[AppContext] Add to cart failed:", error.message);
       }
     },
     [authFetch, fetchCartItems, cartItems]
   );
 
+  const removeFromCart = useCallback(
+    async (cartItemId) => {
+      console.log(`[AppContext] Removing cart item ${cartItemId}`);
+      try {
+        const response = await authFetch(
+          `/api/user/shopping_cart/${cartItemId}`,
+          {
+            method: "DELETE",
+          }
+        );
+        let data = {};
+        if (response.status !== 204) {
+          data = await response.json().catch(() => ({}));
+        }
+        if (response.ok) {
+          toast.success(data?.message || "Produk dihapus");
+          fetchCartItems();
+        } else {
+          toast.error(data?.message || "Gagal menghapus produk");
+        }
+      } catch (error) {
+        console.error("[AppContext] Remove from cart failed:", error.message);
+      }
+    },
+    [authFetch, fetchCartItems]
+  );
+
   const updateQuantity = useCallback(
     async (cartItemId, qty) => {
+      console.log(
+        `[AppContext] Updating cart item ${cartItemId} to Qty: ${qty}`
+      );
+      if (qty < 1) {
+        console.warn(
+          "[AppContext] Invalid quantity (<1) requested for update."
+        );
+        if (qty <= 0) {
+          removeFromCart(cartItemId);
+          return;
+        }
+      }
       try {
         const response = await authFetch(
           `/api/user/shopping_cart/${cartItemId}`,
@@ -190,79 +347,52 @@ const AppProvider = ({ children }) => {
         );
         const data = await response.json();
         if (response.ok) {
-          toast.success("Jumlah produk berhasil diperbarui");
+          toast.success(data.message || "Jumlah diperbarui");
           fetchCartItems();
         } else {
-          toast.error(data.message || "Gagal mengupdate jumlah produk");
+          toast.error(data?.message || "Gagal mengupdate jumlah");
         }
       } catch (error) {
-        console.error("Error updating quantity:", error);
-        toast.error("Terjadi kesalahan saat mengupdate jumlah produk");
+        console.error("[AppContext] Update quantity failed:", error.message);
       }
     },
-    [authFetch, fetchCartItems]
+    [authFetch, fetchCartItems, removeFromCart]
   );
-
-  const removeFromCart = useCallback(
-    async (cartItemId) => {
-      try {
-        const response = await authFetch(
-          `/api/user/shopping_cart/${cartItemId}`,
-          {
-            method: "DELETE",
-          }
-        );
-        const data = await response.json();
-        if (response.ok) {
-          toast.success("Produk berhasil dihapus dari keranjang");
-          fetchCartItems();
-        } else {
-          toast.error(data.message || "Gagal menghapus produk dari keranjang");
-        }
-      } catch (error) {
-        console.error("Error removing from cart:", error);
-        toast.error("Terjadi kesalahan saat menghapus produk dari keranjang");
-      }
-    },
-    [authFetch, fetchCartItems]
-  );
-
-  const clearCart = useCallback(() => {
-    setCartItems([]);
-  }, []);
 
   const getCartCount = () =>
     cartItems.reduce((total, item) => total + item.qty, 0);
-
   const getCartAmount = () =>
     cartItems.reduce((total, cartItem) => {
-      const { original_price, sale_price } = cartItem.productData || {};
-      const effectivePrice = sale_price > 0 ? sale_price : original_price;
-      return total + effectivePrice * cartItem.qty;
+      const price = cartItem.productData?.effective_price ?? 0;
+      return total + price * cartItem.qty;
     }, 0);
 
   const value = {
     token,
     setToken: updateToken,
+    cartItems,
+    cartLoading,
     currency,
     delivery_fee,
     search,
     setSearch,
     showSearch,
     setShowSearch,
-    cartItems,
     addToCart,
     getCartCount,
     getCartAmount,
     updateQuantity,
     removeFromCart,
-    clearCart,
     navigate,
     handleLogout,
     authFetch,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+AppProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default AppProvider;
