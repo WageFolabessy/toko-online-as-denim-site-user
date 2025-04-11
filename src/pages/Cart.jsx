@@ -147,7 +147,7 @@ const Cart = () => {
             >
               {/* Detail Produk */}
               <div className="flex items-center gap-4">
-                <Link to={`/products/${productData.slug}`}>
+                <Link to={`/product/${productData.slug}`}>
                   <img
                     className="w-20 h-20 object-cover rounded-md shadow-sm flex-shrink-0 hover:opacity-90"
                     src={productData.primary_image || "/placeholder.jpg"}
@@ -160,7 +160,7 @@ const Cart = () => {
                 </Link>
                 <div>
                   <Link
-                    to={`/products/${productData.slug}`}
+                    to={`/product/${productData.slug}`}
                     className="hover:text-blue-600"
                   >
                     <p className="text-sm sm:text-base font-medium text-gray-800 line-clamp-2">
