@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -53,7 +53,14 @@ const App = () => {
             }
           />
 
-          <Route path="/place-order" element={<PlaceOrder />} />
+          <Route
+            path="/place-order"
+            element={
+              <PrivateRoute>
+                <PlaceOrder />
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/dashboard"
@@ -63,6 +70,8 @@ const App = () => {
               </PrivateRoute>
             }
           >
+            <Route index element={<Navigate to="orders" replace />} />
+
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="addresses" element={<Addresses />} />
