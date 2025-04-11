@@ -1,42 +1,50 @@
 import { useContext } from 'react';
+import PropTypes from 'prop-types';
 import Title from './Title';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/AppContext'; 
 
 const CartTotal = ({ shippingCost }) => {
     const { currency, getCartAmount } = useContext(AppContext);
 
     const subtotal = getCartAmount();
-    const deliveryFee = shippingCost || 0; // Menggunakan shippingCost dari prop
+    const deliveryFee = typeof shippingCost === 'number' && shippingCost >= 0 ? shippingCost : 0;
     const total = subtotal + deliveryFee;
 
-    // Fungsi untuk memformat angka menjadi format mata uang Indonesia
     const formatCurrency = (amount) => {
-        return currency + amount.toLocaleString('id-ID', { minimumFractionDigits: 0 });
+        const numericAmount = typeof amount === 'number' ? amount : 0;
+        return currency + numericAmount.toLocaleString('id-ID', { minimumFractionDigits: 0 });
     };
 
     return (
         <div className='w-full'>
-            <div className="text-2xl">
+            {/* Judul */}
+            <div className="mb-6">
                 <Title text1={'TOTAL'} text2={'KERANJANG'} />
             </div>
-            <div className='flex flex-col gap-2 mt-2 text-sm'>
-                <div className="flex justify-between">
-                    <p>Subtotal</p>
-                    <p>{formatCurrency(subtotal)}</p>
+
+            {/* Rincian Biaya */}
+            <div className='flex flex-col gap-3 text-sm'>
+                <div className="flex justify-between pb-2">
+                    <p className='text-gray-600'>Subtotal</p>
+                    <p className='font-medium'>{formatCurrency(subtotal)}</p>
                 </div>
                 <hr />
-                <div className="flex justify-between">
-                    <p>Shipping</p>
-                    <p>{formatCurrency(deliveryFee)}</p>
+                <div className="flex justify-between py-2">
+                    <p className='text-gray-600'>Biaya Pengiriman</p>
+                    <p className='font-medium'>{formatCurrency(deliveryFee)}</p>
                 </div>
                 <hr />
-                <div className="flex justify-between">
-                    <b className='pr-2'>Total</b>
-                    <b>{formatCurrency(total)}</b>
+                <div className="flex justify-between pt-2 font-semibold text-base">
+                    <p>Total</p>
+                    <p>{formatCurrency(total)}</p>
                 </div>
             </div>
         </div>
     );
+};
+
+CartTotal.propTypes = {
+    shippingCost: PropTypes.number
 };
 
 export default CartTotal;
