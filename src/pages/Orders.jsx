@@ -1,8 +1,8 @@
-import { useEffect, useState, useContext, useCallback } from "react"; // Import React & useCallback
-import { AppContext } from "../context/AppContext"; // Sesuaikan path
-import { format } from "date-fns"; // date-fns sudah diimport
-import { id } from "date-fns/locale"; // Locale sudah diimport
-import { useNavigate, useSearchParams } from "react-router-dom"; // Import useSearchParams
+import { useEffect, useState, useContext, useCallback } from "react";
+import { AppContext } from "../context/AppContext";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
@@ -24,13 +24,11 @@ const Orders = () => {
     document.title = "AS Denim - Pesanan Saya";
   }, []);
 
-  // Fungsi fetch dengan pagination
   const fetchOrders = useCallback(
     async (page = 1) => {
       setLoading(true);
       setError(null);
       try {
-        // Tambahkan parameter page ke API call
         const response = await authFetch(`/api/user/user_orders?page=${page}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -38,12 +36,11 @@ const Orders = () => {
             errorData?.message || `Gagal mengambil pesanan (${response.status})`
           );
         }
-        const data = await response.json(); // Expect { data: [...], links: ..., meta: ... }
+        const data = await response.json();
 
-        // Akses data dari 'data', simpan links & meta
         if (data && Array.isArray(data.data)) {
-          setOrders(data.data); // List order untuk halaman ini
-          setPaginationData({ links: data.links, meta: data.meta }); // Info paginasi
+          setOrders(data.data);
+          setPaginationData({ links: data.links, meta: data.meta });
         } else {
           throw new Error("Format data pesanan tidak valid.");
         }
@@ -54,21 +51,19 @@ const Orders = () => {
             error.message || "Terjadi kesalahan saat mengambil pesanan."
           );
         }
-        setOrders([]); // Kosongkan jika error
+        setOrders([]);
         setPaginationData(null);
       } finally {
         setLoading(false);
       }
     },
     [authFetch]
-  ); // Dependency
+  );
 
-  // Fetch data saat halaman berubah
   useEffect(() => {
     fetchOrders(currentPage);
   }, [fetchOrders, currentPage]);
 
-  // Handler pindah halaman
   const handlePageChange = (newPage) => {
     if (
       newPage >= 1 &&
@@ -76,11 +71,9 @@ const Orders = () => {
       newPage <= paginationData.meta.last_page
     ) {
       setSearchParams({ page: newPage.toString() }, { replace: true });
-      // fetchOrders akan dipanggil ulang oleh useEffect di atas
     }
   };
 
-  // Render Loading
   if (loading) {
     return (
       <div className="p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-sm text-center min-h-[300px] flex justify-center items-center">
@@ -94,7 +87,6 @@ const Orders = () => {
     );
   }
 
-  // Render Error
   if (error) {
     return (
       <div className="p-4 sm:p-6 md:p-8 bg-red-50 border border-red-200 rounded-lg shadow-sm text-center text-red-700">
@@ -109,7 +101,6 @@ const Orders = () => {
     );
   }
 
-  // Render Konten Utama
   return (
     <div className="p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-sm">
       <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
@@ -141,7 +132,6 @@ const Orders = () => {
                       {order.order_number}
                     </td>
                     <td className="border-b p-3 whitespace-nowrap">
-                      {/* Gunakan order.order_date dari resource */}
                       {order.order_date
                         ? format(
                             new Date(order.order_date),
@@ -151,7 +141,6 @@ const Orders = () => {
                         : "-"}
                     </td>
                     <td className="border-b p-3">
-                      {/* Anda bisa menambahkan styling berdasarkan status */}
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
                           order.status === "processed"
@@ -175,7 +164,7 @@ const Orders = () => {
                       <button
                         onClick={() =>
                           navigate(`/dashboard/orders/${order.id}`)
-                        } // ID order, bukan order_number
+                        }
                         className="text-blue-600 hover:underline font-medium text-xs sm:text-sm"
                       >
                         Lihat Detail
@@ -186,7 +175,6 @@ const Orders = () => {
               </tbody>
             </table>
           </div>
-          {/* Kontrol Paginasi */}
           {paginationData && paginationData.meta.last_page > 1 && (
             <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t">
               <button
