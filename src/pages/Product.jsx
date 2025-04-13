@@ -126,7 +126,7 @@ const Product = () => {
                 <img
                   className="w-full h-full object-cover"
                   src={selectedImage || "/placeholder.jpg"}
-                  alt={productData.name} // Gunakan nama dari resource
+                  alt={productData.name}
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = "/placeholder.jpg";
