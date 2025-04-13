@@ -133,7 +133,7 @@ const Categories = () => {
                             <div key={category.id} className="px-2 md:px-3">
                                 <div
                                     className="cursor-pointer group flex flex-col items-center p-4 bg-gradient-to-r from-gray-200 to-white rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 h-80"
-                                    onClick={() => navigate("/collection", { state: { selectedCategory: category.name } })}
+                                    onClick={() => navigate(`/collection?category=${category.id}`)}
                                 >
                                     <div className="h-52 w-full mb-2 overflow-hidden rounded-lg">
                                         <img

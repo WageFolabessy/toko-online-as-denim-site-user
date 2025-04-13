@@ -1,232 +1,334 @@
-import { useContext, useEffect, useState, useMemo, useCallback } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import Title from "../components/Title";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import ProductItem from "../components/ProductItem";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
-  faArrowRight,
+  faFilter,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppContext } from "../context/AppContext";
 
+const buildQueryString = (params) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== "") {
+      if (Array.isArray(value)) {
+        if (value.length > 0) query.append(key, value[0]);
+      } else {
+        query.append(key, value);
+      }
+    }
+  });
+  return query.toString();
+};
+
+const formatProductItem = (item) => {
+  if (
+    !item ||
+    typeof item !== "object" ||
+    item.id === undefined ||
+    item.name === undefined
+  ) {
+    console.warn("Invalid product item structure:", item);
+    return null;
+  }
+
+  return {
+    id: item.id,
+    name: item.name,
+    original_price: item.original_price,
+    sale_price: item.sale_price,
+    image: item.primary_image ? item.primary_image : "/placeholder.jpg",
+    category: item.category?.name || "Unknown",
+    description: item.description,
+    slug: item.slug,
+    stock: item.stock ?? 1,
+  };
+};
+
 const Collection = () => {
-  const { search, setSearch, showSearch, setShowSearch } =
-    useContext(AppContext);
-  const location = useLocation();
+  const { search, showSearch, setShowSearch } = useContext(AppContext);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [products, setProducts] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
   const [paginationData, setPaginationData] = useState(null);
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [sortType, setSortType] = useState("relevent");
+  const [sortOption, setSortOption] = useState("relevance");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
 
+  const [allCategories, setAllCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoryError, setCategoryError] = useState(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const initialCategoryIdFilter = searchParams.get("category") || null;
 
   useEffect(() => {
     const fetchAllCategories = async () => {
+      setLoadingCategories(true);
+      setCategoryError(null);
+      setAllCategories([]);
       try {
         const response = await fetch("/api/user/get_categories");
-        if (!response.ok) throw new Error("Gagal mengambil data kategori");
-        const data = await response.json();
-        if (data && data.data) {
-          setAllCategories(data.data);
+        if (!response.ok) {
+          let errorBody = `HTTP error! status: ${response.status}`;
+          try {
+            const text = await response.text();
+            const json = JSON.parse(text);
+            errorBody = json.message || JSON.stringify(json);
+          } catch (parseError) {}
+          throw new Error(`Gagal mengambil kategori: ${errorBody}`);
+        }
+        const responseData = await response.json();
+        const categoryArraySource = responseData?.data || responseData;
+        if (Array.isArray(categoryArraySource)) {
+          const formattedCategories = categoryArraySource
+            .map((cat) => {
+              if (
+                !cat ||
+                typeof cat !== "object" ||
+                cat.id === undefined ||
+                cat.name === undefined
+              )
+                return null;
+              return { id: cat.id, name: cat.name };
+            })
+            .filter(Boolean);
+          setAllCategories(formattedCategories);
+        } else {
+          throw new Error("Format data kategori tidak valid.");
         }
       } catch (catError) {
-        console.error("Error fetching all categories:", catError);
+        console.error("Error fetching categories:", catError);
+        setCategoryError(catError.message || "Gagal memuat kategori.");
+      } finally {
+        setLoadingCategories(false);
       }
     };
     fetchAllCategories();
   }, []);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    if (initialCategoryIdFilter) {
+      const initialId = parseInt(initialCategoryIdFilter, 10);
+      if (!isNaN(initialId) && !selectedCategoryIds.includes(initialId)) {
+        setSelectedCategoryIds([initialId]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategoryIdFilter]);
+
+  const fetchSearchResults = useCallback(
+    async (page, keyword, categoryIds, sort) => {
       setLoading(true);
       setError(null);
-      const apiUrl = `/api/user/get_products?page=${currentPage}`;
+
+      let sortBy = "_score",
+        sortOrder = "desc";
+      if (sort === "price-asc") {
+        sortBy = "original_price";
+        sortOrder = "asc";
+      } else if (sort === "price-desc") {
+        sortBy = "original_price";
+        sortOrder = "desc";
+      }
+
+      const params = {
+        page: page,
+        keyword: keyword,
+        category_id: categoryIds.length > 0 ? categoryIds[0] : null, // Kirim ID pertama
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        per_page: 12,
+      };
+      const queryString = buildQueryString(params);
+      const apiUrl = `/api/products/search?${queryString}`;
+
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
-          const errorData = await response
-            .json()
-            .catch(() => ({ message: response.statusText }));
-          throw new Error(
-            `Gagal mengambil produk: ${response.status} ${
-              errorData.message || ""
-            }`
-          );
+          let errorBody = `HTTP error! status: ${response.status}`;
+          try {
+            const text = await response.text();
+            const json = JSON.parse(text);
+            errorBody = json.message || JSON.stringify(json);
+          } catch (parseError) {}
+          throw new Error(`Gagal mengambil produk: ${errorBody}`);
         }
-        const data = await response.json();
+        const responseData = await response.json();
 
-        if (data && Array.isArray(data.data)) {
-          const formattedProducts = data.data.map((item) => ({
-            id: item.id,
-            name: item.name,
-            original_price: item.original_price,
-            sale_price: item.sale_price,
-            image: item.primary_image || "/placeholder.jpg",
-            category: item.category?.name || "Unknown",
-            description: item.description,
-            slug: item.slug,
-            stock: item.stock,
-          }));
+        if (responseData && responseData.links && responseData.meta) {
+          let productArraySource = null;
+          if (Array.isArray(responseData.data)) {
+            productArraySource = responseData.data;
+          } else if (
+            typeof responseData.data === "object" &&
+            responseData.data !== null
+          ) {
+            console.warn("API 'data' is object, converting to array.");
+            productArraySource = Object.values(responseData.data);
+          } else {
+            productArraySource = [];
+          }
+
+          const formattedProducts = productArraySource
+            .map(formatProductItem)
+            .filter(Boolean);
           setProducts(formattedProducts);
-          setPaginationData({ links: data.links, meta: data.meta });
+          setPaginationData({
+            links: responseData.links,
+            meta: responseData.meta,
+          });
         } else {
-          console.warn("Format data produk tidak sesuai:", data);
-          setProducts([]);
-          setPaginationData(null);
+          throw new Error("Format respons server tidak dikenali.");
         }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setError(
-          error.message || "Terjadi kesalahan saat mengambil data produk."
-        );
+      } catch (fetchError) {
+        console.error("Error fetching search results:", fetchError);
+        setError(fetchError.message || "Terjadi kesalahan.");
         setProducts([]);
         setPaginationData(null);
       } finally {
         setLoading(false);
       }
-    };
-    fetchProducts();
-  }, [currentPage]);
+    },
+    []
+  );
 
   useEffect(() => {
-    if (location.state?.selectedCategory) {
-      setSelectedCategories([location.state.selectedCategory]);
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
-
-  const filteredAndSortedProducts = useMemo(() => {
-    let processedProducts = [...products];
-
-    if (showSearch && search) {
-      processedProducts = processedProducts.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (selectedCategories.length > 0) {
-      processedProducts = processedProducts.filter(
-        (item) => selectedCategories.includes(item.category)
-      );
-    }
-
-    switch (sortType) {
-      case "low-high":
-        processedProducts.sort(
-          (a, b) =>
-            (a.sale_price ?? a.original_price) -
-            (b.sale_price ?? b.original_price)
-        );
-        break;
-      case "high-low":
-        processedProducts.sort(
-          (a, b) =>
-            (b.sale_price ?? b.original_price) -
-            (a.sale_price ?? a.original_price)
-        );
-        break;
-      default:
-        break;
-    }
-    return processedProducts;
-  }, [products, selectedCategories, search, showSearch, sortType]);
+    fetchSearchResults(currentPage, search, selectedCategoryIds, sortOption);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, search, selectedCategoryIds, sortOption]);
 
   const toggleCategoryFilter = useCallback(
-    (categoryName) => {
-      setSelectedCategories((prev) =>
-        prev.includes(categoryName)
-          ? prev.filter((item) => item !== categoryName)
-          : [...prev, categoryName]
+    (categoryId) => {
+      const currentId = parseInt(categoryId, 10);
+      if (isNaN(currentId)) return;
+
+      setSelectedCategoryIds((prev) =>
+        prev.includes(currentId)
+          ? prev.filter((id) => id !== currentId)
+          : [...prev, currentId]
       );
-      setSearchParams({ page: "1" }, { replace: true });
+      setSearchParams(
+        (prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set("page", "1"); // Reset halaman
+          return newParams;
+        },
+        { replace: true }
+      );
     },
     [setSearchParams]
   );
 
-  const handlePageChange = (newPage) => {
-    if (
-      newPage >= 1 &&
-      paginationData &&
-      newPage <= paginationData.meta.last_page
-    ) {
-      setSearchParams({ page: newPage.toString() }, { replace: true });
-      window.scrollTo(0, 0);
-    }
+  const handlePageChange = useCallback(
+    (newPage) => {
+      if (
+        newPage >= 1 &&
+        paginationData?.meta?.last_page &&
+        newPage <= paginationData.meta.last_page
+      ) {
+        setSearchParams(
+          (prev) => {
+            const n = new URLSearchParams(prev);
+            n.set("page", newPage.toString());
+            return n;
+          },
+          { replace: true }
+        );
+        window.scrollTo(0, 0);
+      }
+    },
+    [paginationData, setSearchParams]
+  );
+
+  const handleSortChange = (e) => {
+    const newSortOption = e.target.value;
+    setSortOption(newSortOption);
+    setSearchParams(
+      (prev) => {
+        const n = new URLSearchParams(prev);
+        n.set("page", "1");
+        return n;
+      },
+      { replace: true }
+    );
   };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 border-t px-4 sm:px-8 pt-8 mt-9">
-      {" "}
       <aside className="lg:w-64 space-y-4 flex-shrink-0">
         <div className="flex justify-between items-center pb-4">
           <h2 className="text-lg font-semibold">Cari</h2>
           <FontAwesomeIcon
             onClick={() => setShowSearch((prev) => !prev)}
             icon={faSearch}
-            className="cursor-pointer text-gray-600 hover:text-black"
+            className="cursor-pointer text-gray-600 hover:text-black h-5"
             title={showSearch ? "Sembunyikan Pencarian" : "Tampilkan Pencarian"}
           />
         </div>
-
         <div className="lg:hidden flex justify-between items-center border-t pt-4">
           <h2 className="text-lg font-semibold">Filter</h2>
           <FontAwesomeIcon
-            icon={faArrowRight}
+            icon={faFilter}
             onClick={() => setShowFilter((prev) => !prev)}
-            className={`h-5 cursor-pointer transition-transform duration-300 ${
-              showFilter ? "rotate-90" : ""
+            className={`h-5 cursor-pointer transition-opacity duration-300 ${
+              showFilter ? "opacity-100" : "opacity-70"
             }`}
           />
         </div>
-
         <div
           className={`mt-3 border-t pt-4 ${
             showFilter ? "block" : "hidden lg:block"
           }`}
         >
           <h3 className="text-base font-semibold mb-2">Kategori</h3>
-          <div className="flex flex-col gap-2 text-sm max-h-60 overflow-y-auto pr-2">
-            {" "}
-            {allCategories.length > 0 ? (
-              allCategories.map((cat) => (
+          {loadingCategories ? (
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <FontAwesomeIcon icon={faSpinner} spin /> Memuat kategori...
+            </p>
+          ) : categoryError ? (
+            <p className="text-xs text-red-500">Error: {categoryError}</p>
+          ) : allCategories.length === 0 ? (
+            <p className="text-xs text-gray-500">Tidak ada kategori.</p>
+          ) : (
+            <div className="flex flex-col gap-2 text-sm max-h-60 overflow-y-auto pr-2">
+              {allCategories.map((cat) => (
                 <label
                   key={cat.id}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    value={cat.name}
-                    checked={selectedCategories.includes(cat.name)}
-                    onChange={() => toggleCategoryFilter(cat.name)}
+                    value={cat.id} // Value tetap ID
+                    checked={selectedCategoryIds.includes(cat.id)} // Cek berdasarkan ID
+                    onChange={() => toggleCategoryFilter(cat.id)} // Toggle berdasarkan ID
                     className="accent-black"
                   />
-                  {cat.name}
+                  {cat.name || `Kategori ID ${cat.id}`}
                 </label>
-              ))
-            ) : (
-              <p className="text-xs text-gray-500">Memuat kategori...</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
+
       <main className="flex-1">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
           <Title text1="SEMUA" text2="KOLEKSI" />
           <select
-            value={sortType}
-            onChange={(e) => setSortType(e.target.value)}
+            value={sortOption}
+            onChange={handleSortChange}
             className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-black"
+            disabled={loading}
           >
-            <option value="default">Urutkan: Paling Sesuai</option>
-            <option value="low-high">Urutkan: Harga Terendah</option>
-            <option value="high-low">Urutkan: Harga Tertinggi</option>
+            <option value="relevance">Urutkan: Paling Sesuai</option>
+            <option value="price-asc">Urutkan: Harga Terendah</option>
+            <option value="price-desc">Urutkan: Harga Tertinggi</option>
           </select>
         </div>
 
@@ -240,62 +342,72 @@ const Collection = () => {
             />
           </div>
         ) : error ? (
-          <div className="text-center text-red-500 py-10">Error: {error}</div>
-        ) : filteredAndSortedProducts.length === 0 ? (
-          <div className="text-center text-gray-500 py-10">
-            Tidak ada produk yang cocok dengan filter Anda.
+          <div className="text-center text-red-500 py-10 px-4">
+            <p className="font-semibold">Oops! Terjadi Kesalahan</p>
+            <p className="text-sm mt-1">{error}</p>
+            <p className="text-xs mt-2 text-gray-500">
+              Silakan coba lagi nanti.
+            </p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center text-gray-500 py-10 px-4">
+            Tidak ada produk yang cocok.
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {filteredAndSortedProducts.map((item) => (
-              <div
-                key={item.id}
-                className="transform transition-transform duration-300 ease-in-out hover:scale-[1.03]"
-              >
-                <ProductItem
-                  id={item.id}
-                  name={item.name}
-                  originalPrice={item.original_price}
-                  salePrice={item.sale_price}
-                  image={item.image}
-                  slug={item.slug}
-                  stock={item.stock}
-                />
-              </div>
-            ))}
+            {products.map(
+              (item) =>
+                item && (
+                  <div
+                    key={item.id}
+                    className="transform transition-transform duration-300 ease-in-out hover:scale-[1.03]"
+                  >
+                    <ProductItem {...item} />
+                  </div>
+                )
+            )}
           </div>
         )}
 
-        {paginationData && paginationData.meta.last_page > 1 && !loading && (
-          <div className="flex justify-center items-center space-x-2 mt-8 py-4 border-t">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 border rounded text-sm ${
-                currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Sebelumnya
-            </button>
-            <span className="text-sm text-gray-600">
-              Halaman {paginationData.meta.current_page} dari{" "}
-              {paginationData.meta.last_page}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === paginationData.meta.last_page}
-              className={`px-4 py-2 border rounded text-sm ${
-                currentPage === paginationData.meta.last_page
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Berikutnya
-            </button>
-          </div>
-        )}
+        {paginationData?.meta?.last_page > 1 &&
+          !loading &&
+          products.length > 0 && (
+            <div className="flex justify-center items-center space-x-2 mt-8 py-4 border-t">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || !paginationData?.links?.prev}
+                className={`px-4 py-2 border rounded text-sm ${
+                  currentPage === 1 || !paginationData?.links?.prev
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Sebelumnya
+              </button>
+              {paginationData?.meta && (
+                <span className="text-sm text-gray-600">
+                  {" "}
+                  Halaman {paginationData.meta.current_page} dari{" "}
+                  {paginationData.meta.last_page}{" "}
+                </span>
+              )}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={
+                  currentPage === paginationData?.meta?.last_page ||
+                  !paginationData?.links?.next
+                }
+                className={`px-4 py-2 border rounded text-sm ${
+                  currentPage === paginationData?.meta?.last_page ||
+                  !paginationData?.links?.next
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Berikutnya
+              </button>
+            </div>
+          )}
       </main>
     </div>
   );

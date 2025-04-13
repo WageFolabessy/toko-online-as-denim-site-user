@@ -4,15 +4,15 @@ import PropTypes from "prop-types";
 const ProductItem = ({
     image = "/placeholder.jpg",
     name = "Unknown Product",
-    originalPrice = 0,
-    salePrice = null,
+    original_price = 0,
+    sale_price = null,
     slug = null,
     stock = 1,
 }) => {
     const isOutOfStock = stock <= 0; // Lebih aman pakai <= 0
-    const hasDiscount = salePrice !== null && salePrice > 0 && salePrice < originalPrice;
+    const hasDiscount = sale_price !== null && sale_price > 0 && sale_price < original_price;
     const discountPercentage = hasDiscount
-        ? Math.round(((originalPrice - salePrice) / originalPrice) * 100)
+        ? Math.round(((original_price - sale_price) / original_price) * 100)
         : 0;
 
     const productContent = (
@@ -45,15 +45,15 @@ const ProductItem = ({
                 {hasDiscount ? (
                     <>
                         <p className="text-xs text-gray-400 line-through">
-                            Rp{originalPrice.toLocaleString("id-ID")}
+                            Rp{original_price.toLocaleString("id-ID")}
                         </p>
                         <p className="text-sm font-bold text-red-600">
-                            Rp{salePrice.toLocaleString("id-ID")}
+                            Rp{sale_price.toLocaleString("id-ID")}
                         </p>
                     </>
                 ) : (
                     <p className="text-sm font-bold text-gray-800">
-                        Rp{originalPrice.toLocaleString("id-ID")}
+                        Rp{original_price.toLocaleString("id-ID")}
                     </p>
                 )}
             </div>
@@ -82,9 +82,9 @@ const ProductItem = ({
 ProductItem.propTypes = {
     image: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
-    originalPrice: PropTypes.number.isRequired,
+    original_price: PropTypes.number,
     stock: PropTypes.number.isRequired,
-    salePrice: PropTypes.number,
+    sale_price: PropTypes.number,
     slug: PropTypes.string,
 };
 
