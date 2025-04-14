@@ -34,12 +34,13 @@ const formatProductItem = (item) => {
     console.warn("Invalid product item structure:", item);
     return null;
   }
-
+  const originalPriceValue = item.original_price ?? 0;
+  const salePriceValue = item.sale_price ?? null;
   return {
     id: item.id,
     name: item.name,
-    original_price: item.original_price,
-    sale_price: item.sale_price,
+    original_price: originalPriceValue,
+    sale_price: salePriceValue,
     image: item.primary_image ? item.primary_image : "/placeholder.jpg",
     category: item.category?.name || "Unknown",
     description: item.description,
@@ -72,8 +73,10 @@ const Collection = () => {
       setLoadingCategories(true);
       setCategoryError(null);
       setAllCategories([]);
+      console.log("Fetching categories...");
       try {
         const response = await fetch("/api/user/get_categories");
+        console.log("Category API Response Status:", response.status);
         if (!response.ok) {
           let errorBody = `HTTP error! status: ${response.status}`;
           try {
@@ -84,6 +87,7 @@ const Collection = () => {
           throw new Error(`Gagal mengambil kategori: ${errorBody}`);
         }
         const responseData = await response.json();
+        console.log("Raw Category API Data:", responseData);
         const categoryArraySource = responseData?.data || responseData;
         if (Array.isArray(categoryArraySource)) {
           const formattedCategories = categoryArraySource
@@ -116,8 +120,18 @@ const Collection = () => {
     if (initialCategoryIdFilter) {
       const initialId = parseInt(initialCategoryIdFilter, 10);
       if (!isNaN(initialId) && !selectedCategoryIds.includes(initialId)) {
+        console.log(
+          "Setting initial category filter from URL param:",
+          initialId
+        );
         setSelectedCategoryIds([initialId]);
       }
+    } else if (
+      !initialCategoryIdFilter &&
+      selectedCategoryIds.length > 0 &&
+      !location.state?.navigatedInternally
+    ) {
+      // console.log("URL param category removed, resetting selected categories");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCategoryIdFilter]);
@@ -126,6 +140,12 @@ const Collection = () => {
     async (page, keyword, categoryIds, sort) => {
       setLoading(true);
       setError(null);
+      console.log(`Workspaceing search results... Params:`, {
+        page,
+        keyword,
+        categoryIds,
+        sort,
+      });
 
       let sortBy = "_score",
         sortOrder = "desc";
@@ -140,7 +160,7 @@ const Collection = () => {
       const params = {
         page: page,
         keyword: keyword,
-        category_id: categoryIds.length > 0 ? categoryIds[0] : null, // Kirim ID pertama
+        category_id: categoryIds.length > 0 ? categoryIds[0] : null,
         sort_by: sortBy,
         sort_order: sortOrder,
         per_page: 12,
@@ -169,7 +189,6 @@ const Collection = () => {
             typeof responseData.data === "object" &&
             responseData.data !== null
           ) {
-            console.warn("API 'data' is object, converting to array.");
             productArraySource = Object.values(responseData.data);
           } else {
             productArraySource = [];
@@ -199,6 +218,12 @@ const Collection = () => {
   );
 
   useEffect(() => {
+    console.log("Search effect triggered. Deps:", {
+      currentPage,
+      search,
+      selectedCategoryIds,
+      sortOption,
+    });
     fetchSearchResults(currentPage, search, selectedCategoryIds, sortOption);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, search, selectedCategoryIds, sortOption]);
@@ -208,21 +233,27 @@ const Collection = () => {
       const currentId = parseInt(categoryId, 10);
       if (isNaN(currentId)) return;
 
-      setSelectedCategoryIds((prev) =>
-        prev.includes(currentId)
-          ? prev.filter((id) => id !== currentId)
-          : [...prev, currentId]
-      );
+      const newSelectedIds = selectedCategoryIds.includes(currentId)
+        ? selectedCategoryIds.filter((id) => id !== currentId)
+        : [currentId];
+
+      setSelectedCategoryIds(newSelectedIds);
+
       setSearchParams(
         (prev) => {
           const newParams = new URLSearchParams(prev);
-          newParams.set("page", "1"); // Reset halaman
+          newParams.set("page", "1");
+          if (newSelectedIds.length > 0) {
+            newParams.set("category", newSelectedIds[0].toString());
+          } else {
+            newParams.delete("category");
+          }
           return newParams;
         },
         { replace: true }
       );
     },
-    [setSearchParams]
+    [selectedCategoryIds, setSearchParams]
   );
 
   const handlePageChange = useCallback(
@@ -304,9 +335,9 @@ const Collection = () => {
                 >
                   <input
                     type="checkbox"
-                    value={cat.id} // Value tetap ID
-                    checked={selectedCategoryIds.includes(cat.id)} // Cek berdasarkan ID
-                    onChange={() => toggleCategoryFilter(cat.id)} // Toggle berdasarkan ID
+                    value={cat.id}
+                    checked={selectedCategoryIds.includes(cat.id)}
+                    onChange={() => toggleCategoryFilter(cat.id)}
                     className="accent-black"
                   />
                   {cat.name || `Kategori ID ${cat.id}`}
@@ -343,11 +374,8 @@ const Collection = () => {
           </div>
         ) : error ? (
           <div className="text-center text-red-500 py-10 px-4">
-            <p className="font-semibold">Oops! Terjadi Kesalahan</p>
+            <p className="font-semibold">Oops!</p>
             <p className="text-sm mt-1">{error}</p>
-            <p className="text-xs mt-2 text-gray-500">
-              Silakan coba lagi nanti.
-            </p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center text-gray-500 py-10 px-4">
@@ -387,7 +415,7 @@ const Collection = () => {
               {paginationData?.meta && (
                 <span className="text-sm text-gray-600">
                   {" "}
-                  Halaman {paginationData.meta.current_page} dari{" "}
+                  Hal {paginationData.meta.current_page} dari{" "}
                   {paginationData.meta.last_page}{" "}
                 </span>
               )}
