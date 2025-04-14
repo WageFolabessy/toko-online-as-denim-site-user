@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import ProductReview from "../components/ProductReview";
+import ProductRecommendations from "./ProductRecommendations";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
@@ -253,6 +254,8 @@ const Product = () => {
           <ProductReview productId={productData.id} />
         </div>
       </div>
+
+      <ProductRecommendations></ProductRecommendations>
     </div>
   );
 };

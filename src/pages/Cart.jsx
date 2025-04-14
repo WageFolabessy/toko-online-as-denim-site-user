@@ -10,6 +10,7 @@ import {
   faSpinner,
   faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
+import ProductRecommendations from "./ProductRecommendations";
 
 const Cart = () => {
   useEffect(() => {
@@ -243,6 +244,7 @@ const Cart = () => {
           </div>
         </div>
       </div>
+      <ProductRecommendations></ProductRecommendations>
     </div>
   );
 };
