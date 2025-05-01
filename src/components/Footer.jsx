@@ -39,18 +39,6 @@ const Footer = () => {
                   Tentang Kami
                 </Link>
               </li>
-              <li className="hover:text-gray-500 transition duration-300 hover:translate-x-1 cursor-pointer">
-                Syarat & Ketentuan
-              </li>
-              <li className="hover:text-gray-500 transition duration-300 hover:translate-x-1 cursor-pointer">
-                Pengiriman
-              </li>
-              <li className="hover:text-gray-500 transition duration-300 hover:translate-x-1 cursor-pointer">
-                Kebijakan Privasi
-              </li>
-              <li className="hover:text-gray-500 transition duration-300 hover:translate-x-1 cursor-pointer">
-                FAQs
-              </li>
             </ul>
           </div>
 

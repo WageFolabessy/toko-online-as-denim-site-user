@@ -80,8 +80,8 @@ const LatestCollection = () => {
                                 id={item.id}
                                 image={item.image}
                                 name={item.name}
-                                originalPrice={item.original_price}
-                                salePrice={item.sale_price}
+                                original_price={item.original_price}
+                                sale_price={item.sale_price}
                                 slug={item.slug}
                                 stock={item.stock}
                             />
