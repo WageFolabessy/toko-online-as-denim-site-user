@@ -65,9 +65,6 @@ const LatestCollection = () => {
         <section className="my-10">
             <div className="text-center py-8">
                 <Title text1="PRODUK" text2="TERBARU" />
-                <p className="w-11/12 sm:w-3/4 md:w-2/3 mx-auto text-xs sm:text-sm md:text-base text-gray-600 mt-4">
-                    Temukan koleksi produk terbaru kami yang dirancang dengan gaya dan kualitas terbaik.
-                </p>
             </div>
 
             {latestProducts.length === 0 ? (

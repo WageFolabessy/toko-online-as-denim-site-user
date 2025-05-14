@@ -26,7 +26,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 
 const App = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-300">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <Navbar />
       <SearchBar />

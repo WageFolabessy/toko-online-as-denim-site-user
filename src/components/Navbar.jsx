@@ -48,7 +48,7 @@ const Navbar = () => {
                     {/* Logo */}
                     <div className="flex-shrink-0">
                         <Link to="/" onClick={() => setSidebarVisible(false)}>
-                            <img src={assets.as_logo} alt="AS Denim Logo" className="h-12 w-auto" />
+                            <img src={assets.as_logo} alt="AS Denim Logo" className="h-16 w-auto" />
                         </Link>
                     </div>
 
