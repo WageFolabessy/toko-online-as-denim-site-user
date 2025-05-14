@@ -3,11 +3,7 @@ import Title from "../components/Title";
 import { useSearchParams } from "react-router-dom";
 import ProductItem from "../components/ProductItem";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faSearch,
-  faFilter,
-  faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { AppContext } from "../context/AppContext";
 
 const buildQueryString = (params) => {
@@ -52,14 +48,11 @@ const formatProductItem = (item) => {
 const Collection = () => {
   const { search, showSearch, setShowSearch } = useContext(AppContext);
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [products, setProducts] = useState([]);
   const [paginationData, setPaginationData] = useState(null);
   const [sortOption, setSortOption] = useState("relevance");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showFilter, setShowFilter] = useState(false);
-
   const [allCategories, setAllCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [categoryError, setCategoryError] = useState(null);
@@ -131,9 +124,8 @@ const Collection = () => {
       selectedCategoryIds.length > 0 &&
       !location.state?.navigatedInternally
     ) {
-      // console.log("URL param category removed, resetting selected categories");
+      // memerlukan useLocation()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCategoryIdFilter]);
 
   const fetchSearchResults = useCallback(
@@ -146,7 +138,6 @@ const Collection = () => {
         categoryIds,
         sort,
       });
-
       let sortBy = "_score",
         sortOrder = "desc";
       if (sort === "price-asc") {
@@ -156,7 +147,6 @@ const Collection = () => {
         sortBy = "original_price";
         sortOrder = "desc";
       }
-
       const params = {
         page: page,
         keyword: keyword,
@@ -167,7 +157,6 @@ const Collection = () => {
       };
       const queryString = buildQueryString(params);
       const apiUrl = `/api/products/search?${queryString}`;
-
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -180,7 +169,6 @@ const Collection = () => {
           throw new Error(`Gagal mengambil produk: ${errorBody}`);
         }
         const responseData = await response.json();
-
         if (responseData && responseData.links && responseData.meta) {
           let productArraySource = null;
           if (Array.isArray(responseData.data)) {
@@ -193,7 +181,6 @@ const Collection = () => {
           } else {
             productArraySource = [];
           }
-
           const formattedProducts = productArraySource
             .map(formatProductItem)
             .filter(Boolean);
@@ -225,8 +212,13 @@ const Collection = () => {
       sortOption,
     });
     fetchSearchResults(currentPage, search, selectedCategoryIds, sortOption);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, search, selectedCategoryIds, sortOption]);
+  }, [
+    currentPage,
+    search,
+    selectedCategoryIds,
+    sortOption,
+    fetchSearchResults,
+  ]);
 
   const toggleCategoryFilter = useCallback(
     (categoryId) => {
@@ -238,7 +230,6 @@ const Collection = () => {
         : [currentId];
 
       setSelectedCategoryIds(newSelectedIds);
-
       setSearchParams(
         (prev) => {
           const newParams = new URLSearchParams(prev);
@@ -290,77 +281,85 @@ const Collection = () => {
     );
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row gap-6 border-t px-4 sm:px-8 pt-8 mt-9">
-      <aside className="lg:w-64 space-y-4 flex-shrink-0">
-        <div className="flex justify-between items-center pb-4">
-          <h2 className="text-lg font-semibold">Cari</h2>
-          <FontAwesomeIcon
-            onClick={() => setShowSearch((prev) => !prev)}
-            icon={faSearch}
-            className="cursor-pointer text-gray-600 hover:text-black h-5"
-            title={showSearch ? "Sembunyikan Pencarian" : "Tampilkan Pencarian"}
-          />
+  const renderCategoryFilters = () => {
+    if (loadingCategories) {
+      return (
+        <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+          <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Memuat
+          kategori...
         </div>
-        <div className="lg:hidden flex justify-between items-center border-t pt-4">
-          <h2 className="text-lg font-semibold">Filter</h2>
-          <FontAwesomeIcon
-            icon={faFilter}
-            onClick={() => setShowFilter((prev) => !prev)}
-            className={`h-5 cursor-pointer transition-opacity duration-300 ${
-              showFilter ? "opacity-100" : "opacity-70"
-            }`}
-          />
-        </div>
-        <div
-          className={`mt-3 border-t pt-4 ${
-            showFilter ? "block" : "hidden lg:block"
-          }`}
-        >
-          <h3 className="text-base font-semibold mb-2">Kategori</h3>
-          {loadingCategories ? (
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              <FontAwesomeIcon icon={faSpinner} spin /> Memuat kategori...
-            </p>
-          ) : categoryError ? (
-            <p className="text-xs text-red-500">Error: {categoryError}</p>
-          ) : allCategories.length === 0 ? (
-            <p className="text-xs text-gray-500">Tidak ada kategori.</p>
-          ) : (
-            <div className="flex flex-col gap-2 text-sm max-h-60 overflow-y-auto pr-2">
-              {allCategories.map((cat) => (
-                <label
-                  key={cat.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    value={cat.id}
-                    checked={selectedCategoryIds.includes(cat.id)}
-                    onChange={() => toggleCategoryFilter(cat.id)}
-                    className="accent-black"
-                  />
-                  {cat.name || `Kategori ID ${cat.id}`}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      </aside>
-
-      <main className="flex-1">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
-          <Title text1="SEMUA" text2="KOLEKSI" />
-          <select
-            value={sortOption}
-            onChange={handleSortChange}
-            className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-black"
-            disabled={loading}
+      );
+    }
+    if (categoryError) {
+      return (
+        <p className="py-3 text-sm text-red-500 text-center">
+          Error: {categoryError}
+        </p>
+      );
+    }
+    if (allCategories.length === 0) {
+      return (
+        <p className="py-3 text-sm text-gray-500 text-center">
+          Tidak ada kategori.
+        </p>
+      );
+    }
+    return (
+      <div className="flex overflow-x-auto space-x-2 py-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        {allCategories.map((cat) => (
+          <label
+            key={cat.id}
+            className={`px-4 py-1.5 border rounded-full cursor-pointer text-sm whitespace-nowrap transition-colors duration-150 ease-in-out
+              ${
+                selectedCategoryIds.includes(cat.id)
+                  ? "bg-neutral-800 text-white border-neutral-800"
+                  : "bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-200 hover:border-neutral-400"
+              }`}
           >
-            <option value="relevance">Urutkan: Paling Sesuai</option>
-            <option value="price-asc">Urutkan: Harga Terendah</option>
-            <option value="price-desc">Urutkan: Harga Tertinggi</option>
-          </select>
+            <input
+              type="checkbox"
+              value={cat.id}
+              checked={selectedCategoryIds.includes(cat.id)}
+              onChange={() => toggleCategoryFilter(cat.id)}
+              className="sr-only"
+            />
+            {cat.name || `Kategori ID ${cat.id}`}
+          </label>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="border-t px-4 sm:px-8 pt-8 mt-9">
+      <main>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+          <Title text1="SEMUA" text2="KOLEKSI" />
+          <div className="flex items-center gap-4">
+            {" "}
+            <select
+              value={sortOption}
+              onChange={handleSortChange}
+              className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-black"
+              disabled={loading}
+            >
+              <option value="relevance">Urutkan: Paling Sesuai</option>
+              <option value="price-asc">Urutkan: Harga Terendah</option>
+              <option value="price-desc">Urutkan: Harga Tertinggi</option>
+            </select>
+            <FontAwesomeIcon
+              onClick={() => setShowSearch((prev) => !prev)}
+              icon={faSearch}
+              className="cursor-pointer text-gray-600 hover:text-black h-5"
+              title={
+                showSearch ? "Sembunyikan Pencarian" : "Tampilkan Pencarian"
+              }
+            />
+          </div>
+        </div>
+
+        <div className="mb-6 border-b border-gray-200 pb-3">
+          {renderCategoryFilters()}
         </div>
 
         {loading ? (
