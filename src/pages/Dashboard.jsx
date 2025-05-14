@@ -14,7 +14,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="pt-24 px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 bg-gray-100 min-h-screen">
+    <div className="pt-24 px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold mb-10 text-gray-800">Dashboard</h1>
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
