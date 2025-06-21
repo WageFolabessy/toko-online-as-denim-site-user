@@ -212,8 +212,10 @@ const PlaceOrder = () => {
       }
       const snapToken = data.snapToken;
       const orderNumber = data.order_id;
+      const id = data.id;
       const snapContainerId = "snap-container";
       const snapContainer = document.getElementById(snapContainerId);
+      
       if (!snapContainer) {
         throw new Error(
           "Komponen pembayaran (#snap-container) tidak ditemukan."
@@ -225,12 +227,12 @@ const PlaceOrder = () => {
           onSuccess: function (result) {
             console.log("Payment Success:", result);
             toast.success("Pembayaran berhasil!");
-            navigate(`/dashboard/orders/${result.order_id || orderNumber}`);
+            navigate(`/dashboard/orders/${id || orderNumber}`);
           },
           onPending: function (result) {
             console.log("Payment Pending:", result);
             toast.info("Pembayaran Anda tertunda.");
-            navigate(`/dashboard/orders/${result.order_id || orderNumber}`);
+            navigate(`/dashboard/orders/${id || orderNumber}`);
           },
           onError: function (result) {
             console.error("Payment Error:", result);
